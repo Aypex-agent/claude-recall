@@ -115,3 +115,7 @@ Environment: `RECALL_DB` relocates the index. `CLAUDE_CONFIG_DIR` is respected.
 - The hook rewrites the memory file after Claude's write. Claude Code notices the change on disk and
   carries on.
 - `index.db` holds your transcript text. It is gitignored here; keep it that way.
+
+## License
+
+MIT. See [LICENSE](LICENSE).
