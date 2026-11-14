@@ -1,4 +1,4 @@
-# claude-recall
+# claude-recall (plugin: `verbatim-recall`)
 
 Verbatim memory for [Claude Code](https://claude.com/claude-code). It has two parts:
 
@@ -56,37 +56,41 @@ The server's `instructions` tell every session that memory anchors exist and whe
 ## Install
 
 Requires `python3` (3.11+), [`uv`](https://docs.astral.sh/uv/), and the `claude` CLI on `PATH`.
+The cold read runs `claude -p` with Haiku.
+
+At the prompt of a Claude Code terminal session:
+
+```
+/plugin install verbatim-recall --marketplace Aypex-agent/claude-recall
+```
+
+Answer `y` to add the marketplace, then pick a scope (user is first). From a shell:
+
+```sh
+claude plugin install verbatim-recall --marketplace Aypex-agent/claude-recall
+```
+
+That installs the `recall` MCP server and the memory hook. Start a new session to pick them up.
+
+One setting a plugin can't make for you: Claude Code deletes transcripts after 30 days by default.
+To keep them for 10 years, add this to `~/.claude/settings.json`:
+
+```json
+{ "cleanupPeriodDays": 3650 }
+```
+
+The index (`index.db`) and the review counter (`state.json`) live in `~/.claude/recall/`,
+separate from the plugin's code. The index outlives transcript cleanup.
+
+### By hand, without the plugin system
 
 ```sh
 git clone https://github.com/Aypex-agent/claude-recall ~/.claude/recall
 claude mcp add -s user recall -- uv run --quiet --script ~/.claude/recall/server.py
 ```
 
-Then add the following to `~/.claude/settings.json`. `cleanupPeriodDays` is optional; it raises Claude
-Code's default transcript retention from 30 days to 10 years.
-
-```json
-{
-  "cleanupPeriodDays": 3650,
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "python3 ~/.claude/recall/memory_hook.py",
-            "timeout": 120,
-            "statusMessage": "recall: stamping + cold-reading memory"
-          }
-        ]
-      }
-    ]
-  }
-}
-```
-
-The MCP tools appear in the next session you start.
+Then add the `PostToolUse` hook from `hooks/hooks.json` to `~/.claude/settings.json`, with
+`${CLAUDE_PLUGIN_ROOT}` replaced by `~/.claude/recall`. Don't do both: the hook would run twice.
 
 ## Try it without Claude
 

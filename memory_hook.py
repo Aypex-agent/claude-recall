@@ -93,6 +93,7 @@ def bump_count(key):
     if len(st) > 1000:
         st = dict(list(st.items())[-500:])
     try:
+        STATE.parent.mkdir(parents=True, exist_ok=True)  # data dir, separate from the code under a plugin install
         STATE.write_text(json.dumps(st))
     except Exception:
         pass

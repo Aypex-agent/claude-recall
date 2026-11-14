@@ -1,0 +1,13 @@
+{
+  "name": "verbatim-recall",
+  "owner": {
+    "name": "Aypex-agent"
+  },
+  "plugins": [
+    {
+      "name": "verbatim-recall",
+      "source": "./"
+    }
+  ],
+  "description": "Verbatim transcript recall and cold-read memory review for Claude Code"
+}

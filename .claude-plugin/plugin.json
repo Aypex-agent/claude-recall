@@ -1,0 +1,10 @@
+{
+  "name": "verbatim-recall",
+  "version": "0.2.0",
+  "description": "Verbatim transcript search for Claude Code, plus memory anchors and a no-context cold-read review of every memory write",
+  "author": {
+    "name": "Aypex-agent"
+  },
+  "license": "MIT",
+  "repository": "https://github.com/Aypex-agent/claude-recall"
+}
