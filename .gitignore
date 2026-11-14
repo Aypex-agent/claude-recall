@@ -1,0 +1,6 @@
+# runtime data: index.db holds transcript text, never commit it
+index.db
+index.db-*
+state.json
+__pycache__/
+.ruff_cache/
