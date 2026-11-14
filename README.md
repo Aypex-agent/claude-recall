@@ -33,7 +33,8 @@ entries, so each revision stays traceable.
 
 **Index.** A SQLite FTS5 database (`index.db`, using the porter stemmer and bm25 ranking). It updates
 incrementally on every query by reading only the bytes appended to each transcript since the last read,
-so there is no daemon. Rows outlive Claude Code's transcript cleanup.
+so there is no daemon; a SessionStart hook also refreshes it in the background at the start of
+every session. Rows outlive Claude Code's transcript cleanup.
 
 It indexes user prompts, assistant text, and one-line summaries of tool calls. It skips tool
 results, thinking blocks and API request records. Subagent transcripts are indexed and tagged.
@@ -58,7 +59,9 @@ The server's `instructions` tell every session that memory anchors exist and whe
 Requires `python3` (3.11+), [`uv`](https://docs.astral.sh/uv/), and the `claude` CLI on `PATH`.
 The cold read runs `claude -p` with Haiku.
 
-At the prompt of a Claude Code terminal session:
+Two steps, both required.
+
+**1. Install the plugin.** At the prompt of a Claude Code terminal session:
 
 ```
 /plugin install verbatim-recall --marketplace Aypex-agent/claude-recall
@@ -70,17 +73,27 @@ Answer `y` to add the marketplace, then pick a scope (user is first). From a she
 claude plugin install verbatim-recall --marketplace Aypex-agent/claude-recall
 ```
 
-That installs the `recall` MCP server and the memory hook. Start a new session to pick them up.
+That installs the `recall` MCP server, the memory hook and a SessionStart hook. Start a new
+session to pick them up.
 
-One setting a plugin can't make for you: Claude Code deletes transcripts after 30 days by default.
-To keep them for 10 years, add this to `~/.claude/settings.json`:
+**2. Keep transcripts.** Claude Code deletes session transcripts after 30 days by default, and
+a plugin can't change that setting. Add this to `~/.claude/settings.json`:
 
 ```json
 { "cleanupPeriodDays": 3650 }
 ```
 
-The index (`index.db`) and the review counter (`state.json`) live in `~/.claude/recall/`,
-separate from the plugin's code. The index outlives transcript cleanup.
+Why it matters: every memory's `sources` anchor points into a transcript. recall keeps its own
+copy of each session's text in its index, and index rows outlive cleanup, so an anchor still
+resolves after its transcript is deleted, *if* the session was indexed first. The SessionStart
+hook refreshes the index in the background at the start of every session, which covers most
+cases. But a session can still be deleted before it's indexed if you go 30 days without starting
+Claude Code, and the index holds the conversation text, not the full transcript (tool results
+are left out). Long retention keeps the originals. Until the setting is a year or more, the
+SessionStart hook shows a one-time note about it.
+
+The index (`index.db`), the review counter (`state.json`) and the note's flag live in
+`~/.claude/recall/`, separate from the plugin's code.
 
 ### By hand, without the plugin system
 
@@ -89,7 +102,7 @@ git clone https://github.com/Aypex-agent/claude-recall ~/.claude/recall
 claude mcp add -s user recall -- uv run --quiet --script ~/.claude/recall/server.py
 ```
 
-Then add the `PostToolUse` hook from `hooks/hooks.json` to `~/.claude/settings.json`, with
+Then add both hooks from `hooks/hooks.json` (`PostToolUse` and `SessionStart`) to `~/.claude/settings.json`, with
 `${CLAUDE_PLUGIN_ROOT}` replaced by `~/.claude/recall`. Don't do both: the hook would run twice.
 
 ## Try it without Claude

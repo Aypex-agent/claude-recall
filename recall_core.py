@@ -46,11 +46,12 @@ def connect():
     db.executescript(SCHEMA)
     v = db.execute("SELECT v FROM meta WHERE k='schema'").fetchone()
     if v is None:
-        db.execute("INSERT INTO meta VALUES('schema', ?)", (str(SCHEMA_VERSION),))
+        db.execute("INSERT OR IGNORE INTO meta VALUES('schema', ?)", (str(SCHEMA_VERSION),))
     elif int(v[0]) != SCHEMA_VERSION:
         db.close()
         DB_PATH.unlink()
         return connect()
+    db.commit()
     return db
 
 
@@ -164,6 +165,13 @@ def update_index(db=None):
     """Incrementally index new/changed transcript bytes. Returns number of files touched."""
     own = db is None
     db = db or connect()
+    # One indexer at a time (the MCP server and the SessionStart hook can overlap):
+    # take the write lock before reading any file's offset, so two never ingest
+    # the same bytes twice. The other waits (connect's timeout) and then sees the
+    # offsets this one wrote.
+    if db.in_transaction:
+        db.commit()
+    db.execute("BEGIN IMMEDIATE")
     touched = 0
     seen = set()
     for path in PROJECTS.glob("**/*.jsonl"):
