@@ -59,6 +59,10 @@ The server's `instructions` tell every session that memory anchors exist and whe
 Requires `python3` (3.11+), [`uv`](https://docs.astral.sh/uv/), and the `claude` CLI on `PATH`.
 The cold read runs `claude -p` with Haiku.
 
+The server runs uv with `UV_LINK_MODE=copy`. uv's default hardlinks fail on proot and Android
+(Termux) filesystems, and a failed run leaves `.l2s.*` files that break `~/.cache/uv` until it is
+deleted. Copying costs nothing noticeable elsewhere.
+
 Two steps, both required.
 
 **1. Install the plugin.** At the prompt of a Claude Code terminal session:
